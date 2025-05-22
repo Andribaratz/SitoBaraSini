@@ -1,0 +1,39 @@
+body {
+  background: #111;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+h1 {
+  color: #f39c12;
+}
+
+.tetris-container {
+  display: inline-block;
+  margin-top: 20px;
+}
+
+
+.grid {
+  width: 200px;
+  height: 400px;
+  background: #333;
+  display: grid;
+  grid-template-columns: repeat(10, 20px);
+  border: 2px solid #666;
+}
+
+.grid div {
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+}
+
+.tetromino {
+  background: cyan;
+}
+
+.score {
+  margin-top: 20px;
+  font-size: 20px;
+}
