@@ -1,0 +1,293 @@
+const express = require('express');
+const app = express();
+const port = 3000;
+
+app.get('/', (req, res) => {
+  res.send(
+    
+    `<html>
+    <body>
+    <h1>Sito di barattini e siniscalchi</h1>
+   <a href="http://localhost:3000/tetris">clicca qui per giocare a tetris</a> 
+   <br><br>
+    <a href="http://localhost:3000/contact">contact</a>
+    </body>
+    </html>`);
+  
+});
+
+app.get('/tetris', (req, res) => {
+  res.send( `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Tetris Semplice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000000;
+      color: #fff;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(10, 20px);
+      grid-template-rows: repeat(20, 20px);
+      gap: 1px;
+      background: #222;
+      width: 201px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    #grid div {
+      width: 20px;
+      height: 20px;
+      background: #222;
+      border-radius: 2px;
+    }
+    .tetromino {
+      background: #4ecdc4 !important;
+    }
+    .taken {
+      background: #4ecdc7 !important;
+    }
+    #score {
+      font-size: 1.3em;
+      margin-left: 15px;
+    }
+    #gameOverMsg {
+      color: red;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin: 10px 0;
+    }
+    
+  </style>
+</head>
+<body>
+  <h2>Tetris</h2>
+  <center>
+  <div id="grid"></div>
+  </center>
+  <span>Punteggio: <span id="score">0</span></span>
+  <div>
+    <button id="startButton">Start</button>
+  </div>
+  <div id="gameOverMsg"></div>
+  <di id="pagina principale">
+  <a href="http://localhost:3000">indietro</a>
+  </div>
+  
+
+    <script>
+    const grid = document.getElementById("grid");
+const scoreDisplay = document.getElementById("score");
+const gameOverMsg = document.getElementById("gameOverMsg");
+const width = 10;
+let squares = [];
+let timerId = null;
+let gameOver = false;
+let score = 0;
+createGrid();
+document.getElementById("startButton").addEventListener('click', startGame);
+
+const tetrominoes = [
+  // L
+  [1, width+1, width*2+1, 2],
+  // Z
+  [0, width, width+1, width*2+1],
+  // T
+  [1, width, width+1, width+2],
+  // O
+  [0, 1, width, width+1],
+  // I
+  [1, width+1, width*2+1, width*3+1]
+];
+
+// Stato corrente del gioco
+let current = null;
+let currentPosition = 4;
+
+// Inizializza la griglia (NON partire subito, solo crea la griglia)
+function createGrid() {
+  grid.innerHTML = "";
+  squares = [];
+  for (let i = 0; i < 200; i++) {
+    const div = document.createElement("div");
+    grid.appendChild(div);
+    squares.push(div);
+  }
+}
+
+// Disegna il tetromino
+function draw() {
+  current.forEach(index => {
+    if (squares[currentPosition + index]) {
+      squares[currentPosition + index].classList.add("tetromino");
+    }
+  });
+}
+
+// Cancella il tetromino
+function undraw() {
+  current.forEach(index => {
+    if (squares[currentPosition + index]) {
+      squares[currentPosition + index].classList.remove("tetromino");
+    }
+  });
+}
+
+// Muovi il blocco in basso
+function moveDown() {
+  if (gameOver) return; // Non muovere se il gioco è finito
+  undraw();
+  currentPosition += width;
+  draw();
+  freeze();
+}
+
+// Quando il blocco tocca il fondo o un altro blocco
+function freeze() {
+  if (
+    current.some(
+      index =>
+        squares[currentPosition + index + width]?.classList.contains("taken") ||
+        currentPosition + index + width >= 200
+    )
+  ) {
+    current.forEach(index => squares[currentPosition + index].classList.add("taken"));
+    // Nuovo tetromino
+    current = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+    currentPosition = 4;
+    draw();
+    // Controllo game over: se la nuova posizione è già occupata
+    if (current.some(index => squares[currentPosition + index].classList.contains("taken"))) {
+      gameOver = true;
+      showGameOver();
+      clearInterval(timerId);
+    }
+    addScore();
+  }
+}
+
+// Movimento a sinistra
+function moveLeft() {
+  if (gameOver) return;
+  undraw();
+  const isAtLeftEdge = current.some(index => (currentPosition + index) % width === 0);
+  if (!isAtLeftEdge) currentPosition -= 1;
+  if (current.some(index => squares[currentPosition + index].classList.contains("taken"))) {
+    currentPosition += 1;
+  }
+  draw();
+}
+
+// Movimento a destra
+function moveRight() {
+  if (gameOver) return;
+  undraw();
+  const isAtRightEdge = current.some(index => (currentPosition + index) % width === width - 1);
+  if (!isAtRightEdge) currentPosition += 1;
+  if (current.some(index => squares[currentPosition + index].classList.contains("taken"))) {
+    currentPosition -= 1;
+  }
+  draw();
+}
+
+// Rotazione (non implementata)
+function rotate() {
+  if (gameOver) return;
+  undraw();
+  // Rotazione non implementata in questa versione semplificata
+  draw();
+}
+
+// Controllo dei tasti
+function control(e) {
+  if (gameOver) return;
+  if (e.key === "ArrowLeft") {
+    moveLeft();
+  } else if (e.key === "ArrowRight") {
+    moveRight();
+  } else if (e.key === "ArrowDown") {
+    moveDown();
+  } else if (e.key === "ArrowUp") {
+    rotate();
+  }
+}
+
+// Aggiunta del punteggio
+function addScore() {
+  for (let i = 0; i < 200; i += width) {
+    const row = Array.from({ length: width }, (_, k) => i + k);
+    if (row.every(index => squares[index].classList.contains("taken"))) {
+      score += 10;
+      scoreDisplay.textContent = score;
+      row.forEach(index => {
+        squares[index].classList.remove("taken");
+        squares[index].classList.remove("tetromino");
+      });
+      // Rimuovi i div della riga completata dal DOM e dall'array
+      const removed = squares.splice(i, width);
+      removed.forEach(cell => grid.removeChild(cell));
+      // Crea nuovi div vuoti in cima
+      const newCells = Array.from({ length: width }, () => {
+        const div = document.createElement("div");
+        grid.insertBefore(div, grid.firstChild);
+        return div;
+      });
+      squares = newCells.concat(squares);
+    }
+  }
+}
+
+// Mostra messaggio Game Over
+function showGameOver() {
+  gameOverMsg.textContent = "Game Over!";
+}
+
+// Funzione che avvia il gioco
+function startGame() {
+  resetGame();
+  document.getElementById("startButton").disabled = true;
+  // Scegli un tetromino iniziale
+  current = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+  currentPosition = 4;
+  draw();
+  gameOverMsg.textContent = "";
+  timerId = setInterval(() => {
+    if (!gameOver) moveDown();
+  }, 1000);
+  document.addEventListener("keydown", control);
+}
+
+// Reset del gioco per una nuova partita
+function resetGame() {
+  if (timerId) clearInterval(timerId);
+  gameOver = false;
+  score = 0;
+  scoreDisplay.textContent = score;
+  createGrid();
+  gameOverMsg.textContent = "";
+}
+
+// Setup iniziale
+
+    </script>
+    </body>
+</html> `);
+});
+
+app.get('/contact', (req, res) => {
+  res.send('Welcome to contact us page');
+});
+
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+
+
+
